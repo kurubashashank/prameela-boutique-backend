@@ -19,7 +19,7 @@ const createTransporter = () => {
   });
 };
 
-const sendPasswordResetOtp = async ({ to, otp, expiresInMinutes }) => {
+const sendPasswordResetOtpDirect = async ({ to, otp, expiresInMinutes }) => {
   if (!isEmailConfigured()) {
     if (process.env.NODE_ENV === 'production') {
       throw new Error('SMTP is not configured');
@@ -56,6 +56,33 @@ const sendPasswordResetOtp = async ({ to, otp, expiresInMinutes }) => {
   });
 };
 
+const sendPasswordResetOtp = async ({ to, otp, expiresInMinutes }) => {
+  if (process.env.EMAIL_RELAY_URL) {
+    if (!process.env.EMAIL_RELAY_SECRET) {
+      throw new Error('EMAIL_RELAY_SECRET is not configured');
+    }
+
+    const response = await fetch(process.env.EMAIL_RELAY_URL, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-Email-Relay-Secret': process.env.EMAIL_RELAY_SECRET,
+      },
+      body: JSON.stringify({ to, otp, expiresInMinutes }),
+      signal: AbortSignal.timeout(20000),
+    });
+
+    if (!response.ok) {
+      throw new Error(`Email relay failed with status ${response.status}`);
+    }
+
+    return;
+  }
+
+  await sendPasswordResetOtpDirect({ to, otp, expiresInMinutes });
+};
+
 module.exports = {
   sendPasswordResetOtp,
+  sendPasswordResetOtpDirect,
 };

@@ -7,6 +7,7 @@ const sareeRoutes = require('./routes/sarees');
 const edgeDesignRoutes = require('./routes/edgeDesigns');
 const uploadRoutes = require('./routes/upload');
 const enquiryRoutes = require('./routes/enquiries');
+const emailRelayRoutes = require('./routes/emailRelay');
 
 const app = express();
 let mongoConnectionPromise = null;
@@ -58,6 +59,10 @@ app.use(cors({
 app.get('/api/health', (req, res) => {
   res.json({ status: 'ok' });
 });
+
+// The relay is intentionally database-independent so it can run as a small
+// HTTPS-to-SMTP bridge on a platform that permits outbound SMTP.
+app.use('/api/email', emailRelayRoutes);
 
 app.use(async (req, res, next) => {
   try {
