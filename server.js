@@ -12,9 +12,16 @@ const emailRelayRoutes = require('./routes/emailRelay');
 const app = express();
 let mongoConnectionPromise = null;
 
+const parseOrigins = (value) => (value || '')
+  .split(',')
+  .map((origin) => origin.trim())
+  .filter(Boolean);
+
 const allowedOrigins = [
-  process.env.FRONTEND_URL,
-  process.env.CORS_ORIGIN,
+  ...parseOrigins(process.env.FRONTEND_URL),
+  ...parseOrigins(process.env.CORS_ORIGIN),
+  'https://prameela-boutique.vercel.app',
+  'https://frontend-lovat-rho-65.vercel.app',
   'http://localhost:3000',
   'http://localhost:3001',
 ].filter(Boolean);
