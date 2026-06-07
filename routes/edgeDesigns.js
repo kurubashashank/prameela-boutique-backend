@@ -4,6 +4,63 @@ const authMiddleware = require('../middleware/auth');
 
 const router = express.Router();
 
+const normalizeColorVariants = (value) => {
+  if (Array.isArray(value)) {
+    return value.map((color) => String(color).trim()).filter(Boolean);
+  }
+
+  if (typeof value === 'string') {
+    return value.split(',').map((color) => color.trim()).filter(Boolean);
+  }
+
+  return [];
+};
+
+const normalizeImages = (body) => {
+  if (Array.isArray(body.images)) {
+    return body.images.filter((image) => image && (image.url || image.enhancedUrl || image.closeupUrl));
+  }
+
+  if (typeof body.image === 'string' && body.image.trim()) {
+    return [{
+      url: body.image.trim(),
+      altText: body.name ? `${body.name} edge design` : 'Edge design',
+    }];
+  }
+
+  return undefined;
+};
+
+const normalizeEdgeDesignPayload = (body) => {
+  const payload = { ...body };
+
+  if (payload.price !== undefined) {
+    payload.price = Number(payload.price);
+  }
+
+  if (payload.colorVariants !== undefined) {
+    payload.colorVariants = normalizeColorVariants(payload.colorVariants);
+  }
+
+  const images = normalizeImages(body);
+  if (images !== undefined) {
+    payload.images = images;
+  }
+
+  delete payload.image;
+  return payload;
+};
+
+const serializeEdgeDesign = (edgeDesign) => {
+  const design = edgeDesign.toObject ? edgeDesign.toObject() : edgeDesign;
+  const firstImage = design.images?.[0];
+
+  return {
+    ...design,
+    image: firstImage?.enhancedUrl || firstImage?.url || firstImage?.closeupUrl || '',
+  };
+};
+
 // GET /api/edgeDesigns - Get all edge designs (public)
 router.get('/', async (req, res) => {
   try {
@@ -30,7 +87,7 @@ router.get('/', async (req, res) => {
     const count = await EdgeDesign.countDocuments(filter);
 
     res.json({
-      edgeDesigns,
+      edgeDesigns: edgeDesigns.map(serializeEdgeDesign),
       totalPages: Math.ceil(count / limit),
       currentPage: page,
       total: count,
@@ -51,7 +108,7 @@ router.get('/:id', async (req, res) => {
     edgeDesign.viewCount = (edgeDesign.viewCount || 0) + 1;
     await edgeDesign.save();
 
-    res.json(edgeDesign);
+    res.json(serializeEdgeDesign(edgeDesign));
   } catch (error) {
     res.status(500).json({ error: 'Failed to fetch edge design' });
   }
@@ -60,9 +117,9 @@ router.get('/:id', async (req, res) => {
 // POST /api/edgeDesigns - Create edge design (admin only)
 router.post('/', authMiddleware, async (req, res) => {
   try {
-    const edgeDesign = new EdgeDesign(req.body);
+    const edgeDesign = new EdgeDesign(normalizeEdgeDesignPayload(req.body));
     await edgeDesign.save();
-    res.status(201).json(edgeDesign);
+    res.status(201).json(serializeEdgeDesign(edgeDesign));
   } catch (error) {
     console.error('Error creating edge design:', error);
     res.status(400).json({ error: 'Failed to create edge design' });
@@ -74,11 +131,11 @@ router.put('/:id', authMiddleware, async (req, res) => {
   try {
     const edgeDesign = await EdgeDesign.findByIdAndUpdate(
       req.params.id,
-      { ...req.body, updatedAt: new Date() },
+      { ...normalizeEdgeDesignPayload(req.body), updatedAt: new Date() },
       { new: true }
     );
     if (!edgeDesign) return res.status(404).json({ error: 'Edge design not found' });
-    res.json(edgeDesign);
+    res.json(serializeEdgeDesign(edgeDesign));
   } catch (error) {
     res.status(400).json({ error: 'Failed to update edge design' });
   }

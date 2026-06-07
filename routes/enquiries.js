@@ -7,7 +7,7 @@ const router = express.Router();
 // POST /api/enquiries - Create enquiry (public)
 router.post('/', async (req, res) => {
   try {
-    const { name, email, phone, message, sareeId } = req.body;
+    const { name, email, phone, message, edgeDesignId, sareeId } = req.body;
 
     if (!name || !email || !phone || !message) {
       return res.status(400).json({ error: 'All fields required' });
@@ -18,7 +18,7 @@ router.post('/', async (req, res) => {
       email,
       phone,
       message,
-      sareeId,
+      edgeDesignId: edgeDesignId || sareeId || undefined,
     });
 
     await enquiry.save();
@@ -33,7 +33,7 @@ router.post('/', async (req, res) => {
 router.get('/', authMiddleware, async (req, res) => {
   try {
     const enquiries = await Enquiry.find()
-      .populate('sareeId')
+      .populate('edgeDesignId')
       .sort({ createdAt: -1 });
 
     res.json(enquiries);
