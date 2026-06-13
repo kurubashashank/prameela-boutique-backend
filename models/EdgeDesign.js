@@ -11,9 +11,9 @@ const edgeDesignSchema = new mongoose.Schema({
     required: true,
   },
   description: {
-    type: String,
-    required: true,
-  },
+  type: String,
+  default: '',
+},
   designType: {
     type: String,
     enum: ['Tassel', 'Lace Work', 'Bead Work', 'Border Styling', 'Edge Finishing', 'Mixed'],
