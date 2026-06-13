@@ -58,5 +58,9 @@ const edgeDesignSchema = new mongoose.Schema({
     default: Date.now,
   },
 });
+edgeDesignSchema.index({ createdAt: -1 });
 
-module.exports = mongoose.model('EdgeDesign', edgeDesignSchema);
+module.exports = mongoose.model(
+  'EdgeDesign',
+  edgeDesignSchema
+);

@@ -79,10 +79,12 @@ router.get('/', async (req, res) => {
       if (maxPrice) filter.price.$lte = Number(maxPrice);
     }
 
-    const edgeDesigns = await EdgeDesign.find(filter)
-      .limit(limit * 1)
-      .skip((page - 1) * limit)
-      .sort({ createdAt: -1 });
+   const edgeDesigns = await EdgeDesign.find(filter)
+  .sort({ createdAt: -1 })
+  .allowDiskUse(true)
+  .skip((page - 1) * limit)
+  .limit(Number(limit))
+  .lean();
 
     const count = await EdgeDesign.countDocuments(filter);
 
